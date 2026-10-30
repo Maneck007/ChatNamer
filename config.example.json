@@ -1,0 +1,26 @@
+{
+  "general": {
+    "active_window_minutes": 60,
+    "summary_max_len": 24,
+    "exclude_ids": [],
+    "backup_dir": ""
+  },
+  "platforms": {
+    "zcode": {
+      "enabled": false,
+      "cli_db": "~/.zcode/cli/db/db.sqlite",
+      "tasks_index": "~/.zcode/v2/tasks-index.sqlite"
+    },
+    "codex": {
+      "enabled": false,
+      "home": "~/.codex"
+    },
+    "qoder": {
+      "enabled": false,
+      "data_dir": "%APPDATA%/com.qodercn.app.stable"
+    },
+    "claude": {
+      "enabled": false
+    }
+  }
+}
