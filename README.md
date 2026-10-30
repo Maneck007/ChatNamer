@@ -1,5 +1,7 @@
 # ChatNamer
 
+[![Checks](https://github.com/Maneck007/ChatNamer/actions/workflows/checks.yml/badge.svg)](https://github.com/Maneck007/ChatNamer/actions/workflows/checks.yml)
+
 把 ZCode、Codex、Qoder CN 的本地对话标题整理为 `yyyymmdd_内容概括`。日期取会话开始日，使用本机时区；已有标题优先保留措辞，只添加日期前缀。
 
 这是从个人日常使用中整理出来的实验性工具，目前以 Windows、Python 3.10+ 为使用环境。Claude 桌面端适配器仅提示当前不支持，不改写其云端标题。
@@ -44,7 +46,7 @@ python cli.py --platform codex --apply
 
 ZCode 两库在同一 SQLite ATTACH 事务中更新，缺少 UI 记录或标题已经变化时撤销本批修改，并复核两库结果。两库使用 WAL 时，突然断电仍不具备跨文件原子提交保证。Codex 的数据库和 JSONL 索引也不是一个原子事务。首次使用先关闭目标客户端，选择一个平台试用并检查结果。
 
-恢复时先关闭目标客户端，找到对应运行目录的 `.bak`，将备份恢复到配置中的原数据库位置；Codex 还需恢复对应的 `session_index.jsonl`。当前没有自动撤销命令。
+恢复时先关闭目标客户端，找到对应运行目录的 `.bak`，将备份恢复到配置中的原数据库位置；Codex 还需恢复对应的 `session_index.jsonl`。整库恢复会覆盖备份之后的其他变更，操作前应另存当前数据库。当前没有自动撤销命令。
 
 ## 自动运行与限制
 
@@ -61,3 +63,5 @@ python -m unittest discover -s tests -v
 测试使用临时数据库，不接触你的真实对话。支持 `.jsonl.zst` 的 Codex 历史内容提取时，可选安装 `zstandard`；其他功能使用 Python 标准库。
 
 问题和建议请提交到 [Issues](https://github.com/Maneck007/ChatNamer/issues)。[MIT 许可](LICENSE)。本项目借助 AI 编程工具开发，由维护者审阅和验证。
+
+维护和贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
