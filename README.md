@@ -1,10 +1,33 @@
 # ChatNamer
 
+**聊过的好思路，别再翻半天。**
+
+那次修好的报错、讨论过的方案、做到一半的小项目，都还在聊天记录里。可标题只剩“新对话”，或者几个看不出区别的名字。
+
+ChatNamer 给 **ZCode、Codex、Qoder CN** 的本地对话补上日期和内容概括。下次回来，先看标题，就能多一点找到它的线索。
+
+[看看改名效果](#整理后是什么样) · [开始使用](#开始使用) · [详细用法与备份](docs/USAGE.md) · [反馈建议](https://github.com/Maneck007/ChatNamer/issues)
+
 [![Checks](https://github.com/Maneck007/ChatNamer/actions/workflows/checks.yml/badge.svg)](https://github.com/Maneck007/ChatNamer/actions/workflows/checks.yml)
 
-把 ZCode、Codex、Qoder CN 的本地对话标题整理为 `yyyymmdd_内容概括`。日期取会话开始日，使用本机时区；已有标题优先保留措辞，只添加日期前缀。
+## 整理后是什么样
 
-这是从个人日常使用中整理出来的实验性工具，目前以 Windows、Python 3.10+ 为使用环境。Claude 桌面端适配器仅提示当前不支持，不改写其云端标题。
+| 原来的标题 | 整理后 |
+|---|---|
+| `修复登录报错` | `20261029_修复登录报错` |
+| `新对话`，首条需求是“请帮我整理项目README” | `20261030_整理项目README` |
+| `20261028_整理安装说明` | 已符合格式，保持不变 |
+
+*以上是命名规则示例，日期取会话开始日。默认保留已有好标题的措辞；需要生成概括时，从首条可用用户文字中提取，不会通读整段对话。*
+
+## 把整理聊天记录，变成一件可检查的小事
+
+- **几个工具，一套命名习惯。** 支持 ZCode、Codex、Qoder CN，用 `日期_内容概括` 统一整理。
+- **先看结果，再决定改不改。** 默认预览；只有加上 `--apply` 才写入，写入前备份。
+- **正在聊的，先留着。** 默认跳过最近 60 分钟有活动的会话，也跳过已经符合格式的标题。
+- **不必再接一个模型服务。** 默认在本机按规则整理，不调用云端模型；想自己精修概括，也能导入外部摘要。
+
+目前是 **Windows / Python 3.10+ 的命令行工具**，需要手动配置路径。Claude 桌面端暂不支持。
 
 ## 开始使用
 
@@ -14,54 +37,30 @@ cd ChatNamer
 Copy-Item config.example.json config.json
 ```
 
-打开 `config.json`，核对数据库路径，把需要的平台设置为 `"enabled": true`。示例配置默认关闭所有平台。路径支持 `~` 和 Windows 环境变量，例如 `%APPDATA%`；ZCode 的 `tasks_index` 可能位于你自定义的数据目录，必须填写实际位置。
+打开 `config.json`，核对本机路径，只把准备试用的平台改为 `"enabled": true`。示例配置默认全部关闭；[路径填写说明](docs/USAGE.md#路径配置)在这里。
 
-先预览，再决定是否执行：
+以 Codex 为例，先预览：
 
 ```powershell
 python cli.py --platform codex --no-report
+```
+
+确认列表里的新标题符合预期，**关闭目标客户端**，再执行写入：
+
+```powershell
 python cli.py --platform codex --apply
 ```
 
-省略 `--platform` 会处理配置中启用的全部平台；也可使用 `--platform zcode,codex`。运行记录保存在 `records/`，包含原名与新名，请留在本机。
+第一次建议只选一个平台试用并检查结果。运行记录保存在本机 `records/`，可以查看原名与新名。其他平台、摘要导入和筛选规则见[详细用法](docs/USAGE.md)。
 
-## 命名与摘要
+## 备份和恢复要知道的事
 
-- 最近 60 分钟有活动的会话跳过，窗口可在配置中调整。
-- 已符合格式的标题跳过；不确定的标题留待人工整理。
-- 启发式摘要来自首条可用用户文本，不等同于模型理解完整对话。
-- 外部摘要可用 `python cli.py --apply --summaries summaries.json` 导入，格式为 `{"codex": {"会话ID": "新的概括"}}`。
-- `--export-pending pending.json` 导出待整理清单；请先检查内容，再决定是否交给其他工具。
+这会修改客户端的本地数据。每个平台、每次执行都有独立备份，默认放在系统临时目录；长期使用建议把 `backup_dir` 设置到持久目录。
 
-## 写入与备份
+当前没有一键撤销，整库恢复会覆盖备份之后的其他变更。客户端升级也可能改变数据结构。执行前请读[写入与备份说明](docs/USAGE.md#写入与备份)，其中包含恢复步骤和跨文件写入的限制。
 
-| 平台 | 写入位置 | 范围 |
-|---|---|---|
-| ZCode | CLI `session` + UI 索引 `tasks` | 包含 Fork，排除内部子代理 |
-| Codex | `state_5.sqlite` 的 `threads.name` + `session_index.jsonl` | 包含归档与 `agent_created_thread`，排除 guardian/subagent |
-| Qoder CN | `main.sqlite` 的 `chat_sessions.title` | 排除已删除会话 |
-| Claude 桌面端 | 不写入 | 当前不支持 |
+## 反馈与参与
 
-`--apply` 才写入，写前通过 SQLite backup API 备份。每个平台、每次执行使用独立备份目录，默认在系统临时目录的 `ChatNamer_backups/` 下；长期使用建议配置 `backup_dir` 到自己的持久目录。
+ChatNamer 来自日常整理 AI 对话的需要，目前仍在早期。欢迎在 [Issues](https://github.com/Maneck007/ChatNamer/issues) 分享你遇到的命名难题，或按[贡献说明](CONTRIBUTING.md)改进它；请勿附带私人对话或数据库。
 
-ZCode 两库在同一 SQLite ATTACH 事务中更新，缺少 UI 记录或标题已经变化时撤销本批修改，并复核两库结果。两库使用 WAL 时，突然断电仍不具备跨文件原子提交保证。Codex 的数据库和 JSONL 索引也不是一个原子事务。首次使用先关闭目标客户端，选择一个平台试用并检查结果。
-
-恢复时先关闭目标客户端，找到对应运行目录的 `.bak`，将备份恢复到配置中的原数据库位置；Codex 还需恢复对应的 `session_index.jsonl`。整库恢复会覆盖备份之后的其他变更，操作前应另存当前数据库。当前没有自动撤销命令。
-
-## 自动运行与限制
-
-公开版提供手动 CLI，不会安装开机任务、客户端钩子或云端模型调用。可在确认预览结果后自行配置系统计划任务。个人环境中的 ZCode SessionStart 钩子曾未触发，因此本项目不把它作为可靠的默认安装方式。
-
-客户端升级可能改变私有数据库结构。结构不兼容会报错，退出码为非零；请停止写入并提交已脱敏的版本信息和错误。异常退出留下 `.lock` 时，确认没有 ChatNamer 进程后再删除它。
-
-## 开发
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-测试使用临时数据库，不接触你的真实对话。支持 `.jsonl.zst` 的 Codex 历史内容提取时，可选安装 `zstandard`；其他功能使用 Python 标准库。
-
-问题和建议请提交到 [Issues](https://github.com/Maneck007/ChatNamer/issues)。[MIT 许可](LICENSE)。本项目借助 AI 编程工具开发，由维护者审阅和验证。
-
-维护和贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+[MIT 许可](LICENSE)。借助 AI 编程工具开发，由维护者审阅和验证。
